@@ -602,9 +602,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device, n
     
     return model, train_losses, val_losses, val_accuracies
 
-def predict_match(model, team, opponent, is_home, match_date, team_stats, team_to_id, id_to_team, device):
+def predict_match(model, team, opponent, is_home, match_date, team_stats, team_to_id, id_to_team, device, temperature=1.0):
     """
-    Prepare prediction data for a future match based on historical stats.
+    Prepare prediction data for a future match based on historical stats with temperature scaling.
     
     Args:
         model: The trained model
@@ -616,6 +616,7 @@ def predict_match(model, team, opponent, is_home, match_date, team_stats, team_t
         team_to_id: Mapping from team names to IDs
         id_to_team: Mapping from IDs to team names
         device: Device to run the model on
+        temperature: Temperature parameter for softmax (higher = more uniform probabilities)
     """
     try:
         team_id = team_to_id[team]
@@ -642,8 +643,8 @@ def predict_match(model, team, opponent, is_home, match_date, team_stats, team_t
     
     # Create feature vector (same structure as in prepare_match_features)
     feature = [
-        1 if is_home else 0,  # Home or away game
-        
+        # Feature generation code remains the same...
+        1 if is_home else 0,
         # Team stats
         team_stats[team_id][team_stats_date]['points'],
         team_stats[team_id][team_stats_date]['played'],
@@ -654,9 +655,9 @@ def predict_match(model, team, opponent, is_home, match_date, team_stats, team_t
         team_stats[team_id][team_stats_date]['goals_against'] / max(1, team_stats[team_id][team_stats_date]['played']),
         
         # League position
-        league_positions.get(team_id, 20) / 20,  # Normalize by total teams
+        league_positions.get(team_id, 20) / 20,
         
-        # Form (last 5 games) - average points per game
+        # Form (last 5 games)
         sum(team_stats[team_id][team_stats_date]['form']) / max(1, len(team_stats[team_id][team_stats_date]['form'])) / 3,
         
         # Home/Away specific form
@@ -675,7 +676,7 @@ def predict_match(model, team, opponent, is_home, match_date, team_stats, team_t
         team_stats[opponent_id][opponent_stats_date]['goals_against'] / max(1, team_stats[opponent_id][opponent_stats_date]['played']),
         
         # Opponent league position
-        league_positions.get(opponent_id, 20) / 20,  # Normalize by total teams
+        league_positions.get(opponent_id, 20) / 20,
         
         # Opponent form
         sum(team_stats[opponent_id][opponent_stats_date]['form']) / max(1, len(team_stats[opponent_id][opponent_stats_date]['form'])) / 3,
@@ -701,7 +702,10 @@ def predict_match(model, team, opponent, is_home, match_date, team_stats, team_t
     model.eval()
     with torch.no_grad():
         outputs = model(features_tensor)
-        probabilities = torch.nn.functional.softmax(outputs, dim=1)
+        
+        # Apply temperature scaling to make probabilities more reasonable
+        scaled_outputs = outputs / temperature
+        probabilities = torch.nn.functional.softmax(scaled_outputs, dim=1)
         
         # Get result with highest probability
         predicted_idx = torch.argmax(probabilities, dim=1).item()
@@ -905,29 +909,6 @@ def main():
         }, f)
     
     print("\nModel and components saved in 'model/saved_model' directory")
-    
-    # Example prediction
-    print("\nExample prediction:")
-    # Use the first test match as an example
-    example_match = info_test[0]
-    
-    # Make prediction using historical data
-    prediction, probabilities = predict_match(
-        model,
-        example_match['team'],
-        example_match['opponent'],
-        example_match['venue'] == 'Home',
-        example_match['date'],
-        team_stats,
-        team_to_id,
-        id_to_team,
-        device
-    )
-    
-    print(f"Match: {example_match['team']} vs {example_match['opponent']} ({example_match['venue']})")
-    print(f"Actual result: {example_match['result']}")
-    print(f"Predicted result: {prediction}")
-    print(f"Prediction probabilities: Win={probabilities['Win']:.2f}, Draw={probabilities['Draw']:.2f}, Loss={probabilities['Loss']:.2f}")
 
 if __name__ == "__main__":
     main()
