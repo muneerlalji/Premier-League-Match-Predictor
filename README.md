@@ -93,9 +93,6 @@ The model evaluates performance using:
 - Per-class precision, recall, and F1-score
 - Confusion matrix visualization
 
-## License
-
-
 ## Acknowledgments
 
 - Dataset source: https://www.kaggle.com/datasets/evangower/premier-league-matches-19922022
