@@ -12,10 +12,10 @@ class MatchPredictor(nn.Module):
         super(MatchPredictor, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, hidden_size)  # Kept same size for more capacity
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, hidden_size // 2)
         self.fc4 = nn.Linear(hidden_size // 2, num_classes)
-        self.dropout = nn.Dropout(0.3)  # Increased dropout for better generalization
+        self.dropout = nn.Dropout(0.3)
         self.bn1 = nn.BatchNorm1d(hidden_size)
         self.bn2 = nn.BatchNorm1d(hidden_size)
         self.bn3 = nn.BatchNorm1d(hidden_size // 2)
@@ -174,7 +174,7 @@ def main():
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
     
-    num_epochs = 100
+    num_epochs = 200
     loss_history = train_model(model, train_loader, criterion, optimizer, device, num_epochs, patience=15)
     
     plt.figure(figsize=(10, 6))
