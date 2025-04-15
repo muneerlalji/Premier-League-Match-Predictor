@@ -6,44 +6,63 @@ import numpy as np
 from data_processor import load_and_preprocess_data, create_data_loaders
 import os
 from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
+
 
 class MatchPredictor(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes):
         super(MatchPredictor, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
         self.relu = nn.ReLU()
+
+        # Input layer
+        self.fc1 = nn.Linear(input_size, hidden_size)
+
+        # Hidden layers
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, hidden_size // 2)
+
+        # Output layer
         self.fc4 = nn.Linear(hidden_size // 2, num_classes)
+
+        # Drouput layer for regularization
         self.dropout = nn.Dropout(0.3)
+
+        # Batch normalization for each layer
         self.bn1 = nn.BatchNorm1d(hidden_size)
         self.bn2 = nn.BatchNorm1d(hidden_size)
         self.bn3 = nn.BatchNorm1d(hidden_size // 2)
         
     def forward(self, x):
+        # Pass through the first layer
         output = self.fc1(x)
         output = self.bn1(output)
         output = self.relu(output)
         output = self.dropout(output)
         
+        # Pass through the second layer
         output = self.fc2(output)
         output = self.bn2(output)
         output = self.relu(output)
         output = self.dropout(output)
         
+        # Pass through the third layer
         output = self.fc3(output)
         output = self.bn3(output)
         output = self.relu(output)
         output = self.dropout(output)
         
+        # Pass through the final layer
         output = self.fc4(output)
         return output
 
 def train_model(model, train_loader, criterion, optimizer, device, num_epochs, patience=10):
+    # Set the model to training mode
     model.train()
+
+    # Initialize variables for early stopping
     loss_history = []
     best_loss = float('inf')
-    no_improve = 0
+    epochs_without_improvement = 0
     
     for epoch in range(num_epochs):
         running_loss = 0.0
@@ -51,46 +70,55 @@ def train_model(model, train_loader, criterion, optimizer, device, num_epochs, p
         total = 0
         
         for inputs, targets in train_loader:
+            # Move data to the device
             inputs, targets = inputs.to(device), targets.to(device)
             
+            # Forward pass
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             
+            # Backward pass and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             running_loss += loss.item()
             
+            # Calculate accuracy
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += (predicted == targets).sum().item()
         
+        # Calculate average loss and accuracy for the epoch
         epoch_loss = running_loss / len(train_loader)
         epoch_acc = correct / total
         loss_history.append(epoch_loss)
         
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {epoch_acc:.4f}')
         
+        # Early stopping
         if epoch_loss < best_loss:
             best_loss = epoch_loss
-            no_improve = 0
+            epochs_without_improvement = 0
         else:
-            no_improve += 1
+            epochs_without_improvement += 1
             
-        if no_improve >= patience:
+        if epochs_without_improvement >= patience:
             print(f"Early stopping triggered at epoch {epoch+1}")
             break
     
     return loss_history
 
 def evaluate_model(model, test_loader, device):
+    # Set the model to evaluation mode
     model.eval()
+
     correct = 0
     total = 0
     all_preds = []
     all_targets = []
     
+    # Disable gradient calculation for evaluation
     with torch.no_grad():
         for inputs, targets in test_loader:
             inputs, targets = inputs.to(device), targets.to(device)
@@ -105,7 +133,6 @@ def evaluate_model(model, test_loader, device):
     
     accuracy = correct / total
     
-    from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
     precision, recall, f1, _ = precision_recall_fscore_support(
         all_targets, all_preds, average=None, zero_division=0
     )
