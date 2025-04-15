@@ -32,7 +32,7 @@ Premier-League-Match-Predictor/
 
 ## Requirements
 
-- Python 3.x
+- Python >=3.9
 - PyTorch
 - NumPy
 - Pandas
