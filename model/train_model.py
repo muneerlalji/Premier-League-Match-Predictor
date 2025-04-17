@@ -55,7 +55,7 @@ class MatchPredictor(nn.Module):
         output = self.fc4(output)
         return output
 
-def train_model(model, train_loader, criterion, optimizer, device, num_epochs, patience=10):
+def train_model(model, train_loader, lossFunction, optimizer, device, num_epochs, patience=10):
     # Set the model to training mode
     model.train()
 
@@ -75,7 +75,7 @@ def train_model(model, train_loader, criterion, optimizer, device, num_epochs, p
             
             # Forward pass
             outputs = model(inputs)
-            loss = criterion(outputs, targets)
+            loss = lossFunction(outputs, targets)
             
             # Backward pass and optimization
             optimizer.zero_grad()
@@ -198,11 +198,11 @@ def main():
     class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
     
     # Use weighted cross entropy loss
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    crossEntropyLoss = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
     
     num_epochs = 200
-    loss_history = train_model(model, train_loader, criterion, optimizer, device, num_epochs, patience=15)
+    loss_history = train_model(model, train_loader, crossEntropyLoss, optimizer, device, num_epochs, patience=15)
     
     plt.figure(figsize=(10, 6))
     plt.plot(loss_history)
