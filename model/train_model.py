@@ -12,6 +12,7 @@ from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 class MatchPredictor(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes):
         super(MatchPredictor, self).__init__()
+        # Activation function
         self.relu = nn.ReLU()
 
         # Input layer
