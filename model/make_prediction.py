@@ -11,7 +11,7 @@ from torch.serialization import add_safe_globals
 def load_model(model_path, device):
     loaded_model = torch.load(model_path, map_location=device, weights_only=False)
     
-    input_size = 18  # Number of features in our dataset
+    input_size = 18
     hidden_size = 128
     num_classes = 3
     model = MatchPredictor(input_size, hidden_size, num_classes).to(device)
