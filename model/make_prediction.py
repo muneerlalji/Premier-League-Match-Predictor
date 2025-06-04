@@ -6,10 +6,10 @@ import pickle
 from data_processor import PremierLeagueDataset
 from train_model import MatchPredictor
 from sklearn.preprocessing import StandardScaler
-from torch.serialization import add_safe_globals
 
 def load_model(model_path, device):
-    loaded_model = torch.load(model_path, map_location=device, weights_only=False)
+    # Load the saved model state
+    checkpoint = torch.load(model_path, map_location=device)
     
     input_size = 18
     hidden_size = 128
@@ -17,11 +17,10 @@ def load_model(model_path, device):
     model = MatchPredictor(input_size, hidden_size, num_classes).to(device)
     
     # Load model weights
-    model.load_state_dict(loaded_model['model_state_dict'])
-    
+    model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     
-    scaler = loaded_model['scaler']
+    scaler = checkpoint['scaler']
     
     return model, scaler
 
