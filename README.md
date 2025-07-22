@@ -48,6 +48,45 @@ Premier-League-Match-Predictor/
    ```
 3. Ensure the dataset is in the correct location or update the path in the code
 
+### Running the Application
+
+The application consists of a frontend React application and a FastAPI backend. You'll need to run both services:
+
+#### Backend Setup
+1. Navigate to the backend directory:
+   ```
+   cd backend
+   ```
+2. Create a virtual environment (recommended):
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+   ```
+3. Install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Start the backend server:
+   ```
+   uvicorn main:app --reload
+   ```
+   The backend will run on http://localhost:8000
+
+#### Frontend Setup
+1. Navigate to the frontend directory:
+   ```
+   cd frontend
+   ```
+2. Install the required dependencies:
+   ```
+   npm install
+   ```
+3. Start the development server:
+   ```
+   npm start
+   ```
+   The frontend will run on http://localhost:3000
+
 ### Training the Model
 
 Run the training script to train and save the model:

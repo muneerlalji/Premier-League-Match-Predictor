@@ -19,7 +19,7 @@ app = FastAPI(title="Premier League Match Predictor API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React app will run on port 3000
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +38,33 @@ model, scaler = load_model(model_path, device)
 FOOTBALL_DATA_API_KEY = os.getenv('FOOTBALL_DATA_API_KEY')
 if not FOOTBALL_DATA_API_KEY:
     raise ValueError("FOOTBALL_DATA_API_KEY environment variable is not set")
+
+TEAM_NAME_MAP = {
+    "Arsenal FC": "Arsenal",
+    "Aston Villa FC": "Aston Villa",
+    "AFC Bournemouth": "Bournemouth",
+    "Brentford FC": "Brentford",
+    "Brighton & Hove Albion FC": "Brighton",
+    "Burnley FC": "Burnley",
+    "Chelsea FC": "Chelsea",
+    "Crystal Palace FC": "Crystal Palace",
+    "Everton FC": "Everton",
+    "Fulham FC": "Fulham",
+    "Ipswich Town FC": "Ipswich Town",
+    "Leeds United FC": "Leeds United",
+    "Leicester City FC": "Leicester City",
+    "Liverpool FC": "Liverpool",
+    "Luton Town FC": "Luton Town",
+    "Manchester City FC": "Manchester City",
+    "Manchester United FC": "Manchester Utd",
+    "Newcastle United FC": "Newcastle Utd",
+    "Nottingham Forest FC": "Nott'ham Forest",
+    "Sheffield United FC": "Sheffield Utd",
+    "Southampton FC": "Southampton",
+    "Tottenham Hotspur FC": "Tottenham",
+    "West Ham United FC": "West Ham",
+    "Wolverhampton Wanderers FC": "Wolves",
+}
 
 class MatchPrediction(BaseModel):
     home_team: str
@@ -63,9 +90,8 @@ async def get_upcoming_matches():
     """Get upcoming Premier League matches from football-data.org API"""
     headers = {'X-Auth-Token': FOOTBALL_DATA_API_KEY}
     
-    # Get matches for the next 7 days
-    date_from = datetime.now().strftime('%Y-%m-%d')
-    date_to = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+    date_from = '2024-08-14'
+    date_to = '2024-08-21'
     
     url = f"http://api.football-data.org/v4/matches?dateFrom={date_from}&dateTo={date_to}&competitions=PL"
     
@@ -92,12 +118,10 @@ async def get_upcoming_matches():
 async def predict(match: UpcomingMatch):
     """Make a prediction for a given match"""
     try:
-        # Load team stats from the dataset
         data_path = os.path.join(os.path.dirname(__file__), '..', 'model', 'dataset', 'Premier League-Matches-1993-2023.csv')
         import pandas as pd
         df = pd.read_csv(data_path)
         
-        # Process team stats (similar to make_prediction.py)
         team_stats = {}
         for _, match_data in df.iterrows():
             home_team = match_data['Home']
@@ -115,7 +139,6 @@ async def predict(match: UpcomingMatch):
                 
             away_result = 2 - home_result if home_result != 1 else 1
             
-            # Process home team stats
             if home_team not in team_stats:
                 team_stats[home_team] = {
                     'last_5_results': [],
@@ -151,9 +174,11 @@ async def predict(match: UpcomingMatch):
             team_stats[away_team]['goals_conceded_last_5'] = team_stats[away_team]['goals_conceded_last_5'][-5:]
         
         # Make prediction
-        result = predict_match(model, scaler, match.home_team, match.away_team, team_stats, device)
+        print(TEAM_NAME_MAP.get(match.home_team))
+        print(TEAM_NAME_MAP.get(match.away_team))
+        result = predict_match(model, scaler, TEAM_NAME_MAP.get(match.home_team), TEAM_NAME_MAP.get(match.away_team), team_stats, device)
         
-        if isinstance(result, str):  # Error message
+        if isinstance(result, str):
             raise HTTPException(status_code=400, detail=result)
             
         return MatchPrediction(
